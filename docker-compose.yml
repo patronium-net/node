@@ -1,0 +1,72 @@
+version: '3.4'
+
+
+services:
+
+  erigon-init:
+    user: root
+    image: thorax/erigon:v2.53.0
+    environment:
+      - EL_P2P_PORT=${EL_P2P_PORT:-30303}
+    entrypoint: /erigon-init.sh
+    volumes:
+      - './data/erigon:/db'
+      - type: bind
+        source: ./erigon/erigon-init.sh
+        target: /erigon-init.sh
+      - type: bind
+        source: ./erigon/jwtsecret
+        target: /config/jwtsecret
+      - type: bind
+        source: ./cl_config/genesis.json
+        target: /config/genesis.json
+
+  erigon:
+    user: root
+    image: thorax/erigon:v2.53.0
+    depends_on:
+      erigon-init:
+        condition: service_started      
+    environment:
+      - EL_P2P_PORT=${EL_P2P_PORT:-30303}
+      - RPC_PORT=${RPC_PORT:-8545}
+    ports:
+      - 0.0.0.0:${RPC_PORT:-8545}:${RPC_PORT:-8545}/tcp
+      - 0.0.0.0:${EL_P2P_PORT:-30303}:${EL_P2P_PORT:-30303}/tcp
+      - 0.0.0.0:${EL_P2P_PORT:-30303}:${EL_P2P_PORT:-30303}/udp
+    entrypoint: /erigon.sh
+    volumes:
+      - './data/erigon:/db'
+      - type: bind
+        source: ./erigon/erigon.sh
+        target: /erigon.sh
+      - type: bind
+        source: ./erigon/jwtsecret
+        target: /config/jwtsecret
+      - type: bind
+        source: ./cl_config/genesis.json
+        target: /config/genesis.json
+
+  lighthouse:
+    image: ghcr.io/patronium-net/lighthouse-dencun:latest
+    depends_on:
+      erigon:
+        condition: service_started      
+    environment:
+      - CL_P2P_PORT=${CL_P2P_PORT:-9000}
+      - CL_LOG_LEVEL=${CL_LOG_LEVEL:-info}
+    ports:
+      - 0.0.0.0:${CL_P2P_PORT:-9000}:${CL_P2P_PORT:-9000}/tcp
+      - 0.0.0.0:${CL_P2P_PORT:-9000}:${CL_P2P_PORT:-9000}/udp
+    command: /usr/local/bin/lighthouse.sh
+    volumes:
+      - ./data/lighthouse:/data
+      - type: bind
+        source: ./lighthouse/lighthouse.sh
+        target: /usr/local/bin/lighthouse.sh
+      - type: bind
+        source: ./cl_config
+        target: /config/testnet
+      - type: bind
+        source: ./erigon/jwtsecret
+        target: /config/jwtsecret
