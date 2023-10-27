@@ -1,4 +1,5 @@
 #!/bin/sh
+EXTERNAL_IP=$(curl ipinfo.io/ip)
 
 exec lighthouse bn \
   --datadir /data \
@@ -11,7 +12,7 @@ exec lighthouse bn \
   --metrics \
   --metrics-address=0.0.0.0 \
   --port ${CL_P2P_PORT:-9000} \
-  --enr-address 65.109.53.138 \
+  --enr-address  $EXTERNAL_IP \
   --enr-udp-port ${CL_P2P_PORT:-9000} \
   --enr-tcp-port ${CL_P2P_PORT:-9000} \
   --disable-peer-scoring
