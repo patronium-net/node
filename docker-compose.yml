@@ -70,3 +70,24 @@ services:
       - type: bind
         source: ./erigon/jwtsecret
         target: /config/jwtsecret
+
+  lighthouse-vc:
+    image: ghcr.io/patronium-net/lighthouse-dencun:latest
+    depends_on:
+      lighthouse:
+        condition: service_started
+    command: >
+      lighthouse
+      --debug-level info
+      vc
+      --validators-dir /data/keys
+      --secrets-dir /data/secrets
+      --testnet-dir /config/testnet
+      --init-slashing-protection
+      --beacon-nodes http://lighthouse:5052
+      --suggested-fee-recipient 0x5266Dfa5ae013674f8FdC832b7c601B838D94eE6
+    volumes:
+      - ./validators:/data
+      - type: bind
+        source: ./cl_config
+        target: /config/testnet
